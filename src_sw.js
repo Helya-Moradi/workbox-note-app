@@ -1,10 +1,4 @@
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js');
-import {registerRoute} from 'workbox-routing';
-import {StaleWhileRevalidate} from 'workbox-strategies';
-import {CacheFirst} from 'workbox-strategies';
-import {CacheableResponsePlugin} from 'workbox-cacheable-response';
-import {ExpirationPlugin} from 'workbox-expiration';
-import {precacheAndRoute} from 'workbox-precaching';
 
 console.log('src sw')
 
@@ -13,22 +7,30 @@ const fontCacheName = 'google-fonts-webfonts';
 const maxAgeSeconds = 60 * 60 * 24 * 365;
 const maxEntries = 30;
 
-registerRoute(
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'skip_waiting') {
+        self.skipwaiting();
+    }
+});
+
+workbox.core.clientsClaim();
+
+workbox.routing.registerRoute(
     ({url}) => url.origin === 'https://fonts.googleapis.com',
-    new StaleWhileRevalidate({
+    new workbox.strategies.StaleWhileRevalidate({
         cacheName: sheetCacheName,
     })
 );
 
-registerRoute(
+workbox.routing.registerRoute(
     ({url}) => url.origin === 'https://fonts.gstatic.com',
-    new CacheFirst({
+    new workbox.strategies.CacheFirst({
         cacheName: fontCacheName,
         plugins: [
-            new CacheableResponsePlugin({
+            new workbox.cacheableResponse.CacheableResponsePlugin({
                 statuses: [0, 200],
             }),
-            new ExpirationPlugin({
+            new workbox.expiration.ExpirationPlugin({
                 maxAgeSeconds,
                 maxEntries,
             }),
@@ -36,4 +38,4 @@ registerRoute(
     })
 );
 
-precacheAndRoute(self.__WB_MANIFEST);
+workbox.precaching.precacheAndRoute(self.__WB_MANIFEST);
